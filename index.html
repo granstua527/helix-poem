@@ -1,0 +1,153 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Braided Helices with Gesture</title>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      background: black;
+      overflow: hidden;
+      font-family: monospace;
+    }
+    canvas {
+      position: fixed;
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+  </style>
+</head>
+<body>
+<canvas id="helixCanvas"></canvas>
+<script>
+const canvas = document.getElementById("helixCanvas");
+const ctx = canvas.getContext("2d");
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight;
+
+let width = canvas.width;
+let height = canvas.height;
+
+const lines = [
+  "She", " built", "  a", "   vault", "    without",
+  "     intent-", "      not dwelling,", "       not escape,",
+  "        but shape aligned", "         to windless stress the",
+  "          tension might relate.", "           No metaphor,",
+  "            no yielding clause, just", "             gypsum split by thirst-",
+  "              a room that sways", "               without a wall, a",
+  "                silence unrehearsed.", "                 The inlet held no",
+  "                  guiding wave, no", "                   trace of what had",
+  "                    passed- yet floor by", "                     floor, the schema grew",
+  "                      around a void unasked.", "                       A sequence drawn from",
+  "                        fallen span left every", "                         edge intact.",
+  "                          The ceiling was a", "                           shifted frame where",
+  "                            joining forces act.", "                             No signal flared,",
+  "                              no thread returned.", "                               The map was made",
+  "                                of breaks. Each", "                                 unit stood without",
+  "                                  appeal to origin or", "                                   stake. The final",
+  "                                    panel did not close-", "                                     it cupped the shape",
+  "                                      between, and all", "                                       constraints that framed",
+  "                                        before converged through", "                                         what was seen."
+];
+
+const centerX = width / 2;
+const centerY = height / 2;
+const spacing = 12;
+const baseRadius = 140;
+const lineHeight = spacing * 1.5;
+const linesPerHelix = lines.length;
+const helixCount = 5;
+
+let angleOffset = 0;
+let scrollY = 0;
+let touchStart = {x: 0, y: 0};
+let dragging = false;
+
+function draw() {
+  ctx.clearRect(0, 0, width, height);
+  for (let h = -Math.floor(helixCount / 2); h <= Math.floor(helixCount / 2); h++) {
+    const helixY = centerY + h * linesPerHelix * spacing - scrollY;
+    const phase = h * 40;
+
+    for (let i = 0; i < lines.length; i++) {
+      const offset = i - lines.length / 2;
+      const blend = Math.sin((offset + angleOffset * 0.1) * 0.2) * 0.5 + 0.5;
+      const blendRev = 1 - blend;
+      const braidRadius = baseRadius + 20 * Math.sin((offset + angleOffset * 0.05) * 0.3);
+
+      const angleCW = (offset * 14 + angleOffset + phase) * Math.PI / 180;
+      const angleCCW = (-offset * 14 + angleOffset + phase) * Math.PI / 180;
+
+      const xCW = centerX + braidRadius * Math.cos(angleCW) * blend;
+      const xCCW = centerX + braidRadius * Math.cos(angleCCW) * blendRev;
+      const y = helixY + offset * spacing;
+      const scale = 1 + 0.002 * (2 * Math.abs(offset % 2) + 1);
+
+      ctx.save();
+      ctx.translate(xCW + xCCW - centerX, y);
+      ctx.scale(scale, scale);
+      let text = lines[i % lines.length];
+      let hue = (i * 15 + phase) % 360;
+
+      if (text.trim() === "She") {
+        ctx.fillStyle = "white";
+      } else {
+        ctx.fillStyle = `hsl(${hue}, 90%, 70%)`;
+      }
+      ctx.fillText(text, 0, 0);
+      ctx.restore();
+
+      // Inverse for behind
+      ctx.save();
+      ctx.translate(centerX * 2 - (xCW + xCCW - centerX), y);
+      ctx.scale(scale, scale);
+      const rgb = ctx.fillStyle.match(/\d+/g) || [255, 255, 255];
+      const invColor = `rgb(${255 - rgb[0]}, ${255 - rgb[1]}, ${255 - rgb[2]})`;
+      ctx.fillStyle = invColor;
+      ctx.fillText(text, 0, 0);
+      ctx.restore();
+    }
+  }
+}
+
+function animate() {
+  angleOffset += 0.1;
+  draw();
+  requestAnimationFrame(animate);
+}
+
+canvas.addEventListener('touchstart', e => {
+  touchStart.x = e.touches[0].clientX;
+  touchStart.y = e.touches[0].clientY;
+  dragging = true;
+});
+
+canvas.addEventListener('touchmove', e => {
+  if (!dragging) return;
+  const touchX = e.touches[0].clientX;
+  const touchY = e.touches[0].clientY;
+  const deltaX = touchX - touchStart.x;
+  const deltaY = touchY - touchStart.y;
+  angleOffset += deltaX * 0.05;
+  scrollY += deltaY * 0.5;
+  touchStart.x = touchX;
+  touchStart.y = touchY;
+});
+
+canvas.addEventListener('touchend', () => {
+  dragging = false;
+});
+
+window.addEventListener('resize', () => {
+  canvas.width = width = window.innerWidth;
+  canvas.height = height = window.innerHeight;
+});
+
+animate();
+</script>
+</body>
+</html>
